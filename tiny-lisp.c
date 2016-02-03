@@ -901,7 +901,7 @@ typedef struct Primitive {
 
 Primitive primitives[] = {
   { "quote",  1,  1  /* special form */    },
-  { "setq",   0, -1  /* special form */    },
+  { "setq",   0, -2  /* special form */    },
   { "progn",  0, -1  /* special form */    },
   { "if",     2,  3  /* special form */    },
   { "cond",   0, -1  /* special form */    },
@@ -946,22 +946,26 @@ enum {
 Object *evalExpr(Object **object, Object **env, GC_PARAM);
 
 Object *evalSetq(Object **args, Object **env, GC_PARAM) {
-  GC_TRACE(gcVar, (*args)->car);
-  GC_TRACE(gcVal, (*args)->cdr->car);
-
-  if ((*gcVar)->type != TYPE_SYMBOL)
-    exceptionWithObject(*gcVar, "is not a symbol");
-  if (*gcVar == nil || *gcVar == t)
-    exceptionWithObject(*gcVar, "is a constant and cannot be set");
-
-  *gcVal = evalExpr(gcVal, env, GC_ROOTS);
-  envSet(gcVar, gcVal, env, GC_ROOTS);
-
-  if ((*args)->cdr->cdr == nil)
-    return *gcVal;
+  if (*args == nil)
+    return nil;
   else {
-    GC_TRACE(gcArgs, (*args)->cdr->cdr);
-    return evalSetq(gcArgs, env, GC_ROOTS);
+    GC_TRACE(gcVar, (*args)->car);
+    GC_TRACE(gcVal, (*args)->cdr->car);
+
+    if ((*gcVar)->type != TYPE_SYMBOL)
+      exceptionWithObject(*gcVar, "is not a symbol");
+    if (*gcVar == nil || *gcVar == t)
+      exceptionWithObject(*gcVar, "is a constant and cannot be set");
+
+    *gcVal = evalExpr(gcVal, env, GC_ROOTS);
+    envSet(gcVar, gcVal, env, GC_ROOTS);
+
+    if ((*args)->cdr->cdr == nil)
+      return *gcVal;
+    else {
+      GC_TRACE(gcArgs, (*args)->cdr->cdr);
+      return evalSetq(gcArgs, env, GC_ROOTS);
+    }
   }
 }
 
@@ -1098,9 +1102,12 @@ Object *evalExpr(Object **object, Object **env, GC_PARAM) {
       if (nArgs < primitive->nMinArgs)
         exceptionWithObject(*gcFunc, "expects at least %d arguments",
           primitive->nMinArgs);
-      if (nArgs > primitive->nMaxArgs && primitive->nMaxArgs != -1)
+      if (nArgs > primitive->nMaxArgs && primitive->nMaxArgs >= 0)
         exceptionWithObject(*gcFunc, "expects at most %d arguments",
           primitive->nMaxArgs);
+      if (primitive->nMaxArgs < 0 && nArgs % -primitive->nMaxArgs)
+        exceptionWithObject(*gcFunc, "expects a multiple of %d arguments",
+          -primitive->nMaxArgs);
 
       switch ((*gcFunc)->primitive) {
       case PRIMITIVE_QUOTE:  return (*gcArgs)->car;
