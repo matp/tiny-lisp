@@ -7,13 +7,14 @@ PREFIX ?= /usr/local
 
 .PHONY: all
 all: CPPFLAGS += -DNDEBUG
-all: CFLAGS   += -O2
+all: CFLAGS   += -O3 -ggdb -fno-omit-frame-pointer
+all: LDFLAGS  += -lm
 all: $(PROGRAM)
 
 .PHONY: debug
 debug: CPPFLAGS += -DDEBUG
 debug: CFLAGS   += -g
-debug: LDFLAGS  += -g
+debug: LDFLAGS  += -g -lm
 debug: $(PROGRAM)
 
 .PHONY: clean
