@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 
 #define MEMORY_SIZE          131072UL
 
@@ -868,6 +869,77 @@ DEFINE_PRIMITIVE_ARITHMETIC(primitiveSubtract, -, 0)
 DEFINE_PRIMITIVE_ARITHMETIC(primitiveMultiply, *, 1)
 DEFINE_PRIMITIVE_ARITHMETIC(primitiveDivide,   /, 1)
 
+#define DEFINE_PRIMITIVE_FUNC_1(name, op, init)                              \
+Object *name(Object **args, GC_PARAM) {                                      \
+  if (*args == nil)                                                          \
+    return newNumber(init, GC_ROOTS);                                        \
+  else if ((*args)->car->type != TYPE_NUMBER)                                \
+    exceptionWithObject((*args)->car, "is not a number");                    \
+  else {                                                                     \
+    Object *object, *rest;                                                   \
+                                                                             \
+    if ((*args)->cdr == nil) {                                               \
+      object = newNumber(init, GC_ROOTS);                                    \
+      rest = *args;                                                          \
+    } else {                                                                 \
+      GC_TRACE(gcFirst, (*args)->car);                                       \
+      object = newObjectFrom(gcFirst, GC_ROOTS);                             \
+      rest = (*args)->cdr;                                                   \
+    }                                                                        \
+                                                                             \
+    if (rest->car->type != TYPE_NUMBER)                                      \
+      exceptionWithObject(rest->car, "is not a number");                     \
+                                                                             \
+      object->number = op( rest->car->number );                              \
+                                                                             \
+    return object;                                                           \
+  }                                                                          \
+}
+
+inline double Degrees(double value)
+{
+  return 180.0 / M_PI * value;
+}
+
+inline double Radians(double value)
+{
+  return M_PI / 180.0 * value;
+}
+
+Object* hex(Object** args, GC_PARAM)
+{
+  if(*args == nil)
+    return nil;
+  if((*args)->car->type != TYPE_NUMBER)
+    exceptionWithObject((*args)->car, "is not a number");
+  else {
+    Object *object, *rest = *args;
+    char buff[1024];
+    sprintf(buff, "0x%x", (int)round(rest->car->number));
+    if((*args)->cdr == nil)
+    {
+      object = newString(buff, GC_ROOTS);
+    }
+    else {
+        GC_TRACE(gcFirst, (*args)->car);
+        object = newString(buff, GC_ROOTS);
+    }
+    
+    return object;
+  }
+}
+
+DEFINE_PRIMITIVE_FUNC_1(primitiveSin, sin, 0)
+DEFINE_PRIMITIVE_FUNC_1(primitiveCos, cos, 0)
+DEFINE_PRIMITIVE_FUNC_1(primitiveTan, tan, 0)
+DEFINE_PRIMITIVE_FUNC_1(primitiveASin, asin, 0)
+DEFINE_PRIMITIVE_FUNC_1(primitiveACos, acos, 0)
+DEFINE_PRIMITIVE_FUNC_1(primitiveATan, atan, 0)
+DEFINE_PRIMITIVE_FUNC_1(primitiveSqrt, sqrt, 0)
+DEFINE_PRIMITIVE_FUNC_1(primitiveLog, log, 0)
+DEFINE_PRIMITIVE_FUNC_1(primitiveDegrees, Degrees, 0)
+DEFINE_PRIMITIVE_FUNC_1(primitiveRadians, Radians, 0)
+
 #define DEFINE_PRIMITIVE_RELATIONAL(name, op)                                \
 Object *name(Object **args, GC_PARAM) {                                      \
   if ((*args)->car->type != TYPE_NUMBER)                                     \
@@ -922,7 +994,18 @@ Primitive primitives[] = {
   { "<",      1, -1, primitiveLess         },
   { "<=",     1, -1, primitiveLessEqual    },
   { ">",      1, -1, primitiveGreater      },
-  { ">=",     1, -1, primitiveGreaterEqual }
+  { ">=",     1, -1, primitiveGreaterEqual },
+  { "sin",    1,  1, primitiveSin },
+  { "cos",    1,  1, primitiveCos },
+  { "tan",    1,  1, primitiveTan },
+  { "asin",   1,  1, primitiveASin },
+  { "acos",   1,  1, primitiveACos },
+  { "atan",   1,  1, primitiveATan },
+  { "sqrt",   1,  1, primitiveSqrt },
+  { "log",    1,  1, primitiveLog },
+  { "deg",    1,  1, primitiveDegrees },
+  { "rad",    1,  1, primitiveRadians },
+  { "hex",    1,  1, hex},
 };
 
 // Special forms handled by evalExpr. Must be in the same order as above.
@@ -1182,6 +1265,8 @@ static char *stdlib = LISP(
     (if (null xs)
         y
         (cons (car xs) (append (cdr xs) y))))
+        
+  (defun pi () 3.1415926535)
 );
 
 // MAIN ///////////////////////////////////////////////////////////////////////
