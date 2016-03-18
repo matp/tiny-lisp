@@ -1,7 +1,7 @@
 PROGRAM := tiny-lisp
 OBJECTS := tiny-lisp.o
 
-CFLAGS += -std=c11 -Wall -pedantic
+CFLAGS += -std=gnu11 -Wall -pedantic
 
 PREFIX ?= /usr/local
 
