@@ -1,6 +1,10 @@
 PROGRAM := tiny-lisp
 OBJECTS := tiny-lisp.o
 
+ifeq ($(shell uname -s), Linux)
+CPPFLAGS += -D_DEFAULT_SOURCE -D_BSD_SOURCE
+endif
+
 CFLAGS += -std=c11 -Wall -pedantic
 
 PREFIX ?= /usr/local

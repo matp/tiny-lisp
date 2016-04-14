@@ -11,6 +11,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS        MAP_ANON
+#endif
+
 #define MEMORY_SIZE          131072UL
 
 typedef struct Object Object;
@@ -228,7 +232,7 @@ Object *memoryAllocObject(Type type, size_t size, GC_PARAM) {
   // allocate from- and to-space
   if (!memory->fromSpace) {
     if (!(memory->fromSpace = mmap(NULL, memory->capacity * 2,
-      PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0)))
+      PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)))
       exception("mmap() failed, %s", strerror(errno));
 
     memory->toSpace = (char *)memory->fromSpace + memory->capacity;
@@ -427,7 +431,7 @@ int streamGetc(Stream *stream) {
         if (fstat(stream->fd, &st) == -1)
           exception("fstat() failed, %s", strerror(errno));
 
-        if (st.st_mode & S_IFREG) {
+        if (S_ISREG(st.st_mode)) {
           stream->size = st.st_size;
 
           if (!(stream->buffer = malloc(stream->size)))
