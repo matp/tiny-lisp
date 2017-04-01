@@ -838,6 +838,18 @@ Object *primitivePrinc(Object **args, GC_PARAM) {
   return (*args)->car;
 }
 
+Object *primitiveStringQ(Object ** args, GC_PARAM)
+{
+  Object *first = (*args)->car;
+  return (first != nil && first->type == TYPE_STRING) ? t : nil;
+}
+
+Object *primitiveNumberQ(Object ** args, GC_PARAM)
+{
+  Object *first = (*args)->car;
+  return (first != nil && first->type == TYPE_NUMBER) ? t : nil;
+}
+
 #define DEFINE_PRIMITIVE_ARITHMETIC(name, op, init)                          \
 Object *name(Object **args, GC_PARAM) {                                      \
   if (*args == nil)                                                          \
@@ -918,6 +930,8 @@ Primitive primitives[] = {
   { "cons",   2,  2, primitiveCons         },
   { "print",  1,  1, primitivePrint        },
   { "princ",  1,  1, primitivePrinc        },
+  { "string?",1,  1, primitiveStringQ      },
+  { "number?",1,  1, primitiveNumberQ      },
   { "+",      0, -1, primitiveAdd          },
   { "-",      1, -1, primitiveSubtract     },
   { "*",      0, -1, primitiveMultiply     },
